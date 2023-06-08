@@ -1,3 +1,8 @@
+// TODO: unique id per slot created when slot is clicked look up id
+// TODO: when adding slot to hashmap figure out how to not clone each field
+// TODO: create function to abstract common logic of edit modes
+// TODO: create new mode for about page
+
 use std::collections::HashMap;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -33,7 +38,7 @@ pub enum AppModes {
 impl Default for Slot {
     fn default() -> Self {
         Self {
-            title: String::from("test title"),
+            title: String::from(""),
             username: String::new(),
             email: String::new(),
             password: String::new(),
@@ -53,15 +58,18 @@ impl Default for TemplateApp {
 
 impl TemplateApp {
     /// Called once before the first frame.
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
+        // FIXME: comment this out for dev but in env var
+        /*
         if let Some(storage) = cc.storage {
             return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
         }
+        */
 
         Self::default()
     }
@@ -153,8 +161,44 @@ impl eframe::App for TemplateApp {
                         if ui.button("Cancel").clicked() {
                             self.mode = AppModes::View;
                         } else if ui.button("Save Slot").clicked() {
-                            self.slots
-                                .insert(format!("{}", self.slots.len()), Slot::default());
+                            if let AppModes::Edit(edit_mode) = &self.mode {
+                                if let EditModes::New(slot) = edit_mode {
+                                    if slot.title.is_empty() {
+                                        return;
+                                    };
+
+                                    self.slots.insert(
+                                        format!("{}", self.slots.len()),
+                                        Slot {
+                                            title: slot.title.clone(),
+                                            username: slot.username.clone(),
+                                            email: slot.username.clone(),
+                                            password: slot.password.clone(),
+                                            description: slot.description.clone(),
+                                        },
+                                    );
+                                } else if let EditModes::Prev(slot) = edit_mode {
+                                    if slot.title.is_empty() {
+                                        return;
+                                    };
+
+                                    self.slots.insert(
+                                        format!("{}", self.slots.len()),
+                                        Slot {
+                                            title: slot.title.clone(),
+                                            username: slot.username.clone(),
+                                            email: slot.username.clone(),
+                                            password: slot.password.clone(),
+                                            description: slot.description.clone(),
+                                        },
+                                    );
+                                } else {
+                                    panic!("invalid mode");
+                                }
+                            } else {
+                                panic!("invalid mode");
+                            }
+
                             self.mode = AppModes::View;
                         }
                     });
