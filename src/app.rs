@@ -1,4 +1,3 @@
-// TODO: unique id per slot created when slot is clicked look up id
 // TODO: when adding slot to hashmap figure out how to not clone each field
 // TODO: create function to abstract common logic of edit modes
 // TODO: create new mode for about page
@@ -16,6 +15,7 @@ pub struct TemplateApp {
 
 #[derive(serde::Deserialize, serde::Serialize, Clone)]
 pub struct Slot {
+    id: Option<usize>,
     title: String,
     username: String,
     email: String,
@@ -38,6 +38,7 @@ pub enum AppModes {
 impl Default for Slot {
     fn default() -> Self {
         Self {
+            id: None,
             title: String::from(""),
             username: String::new(),
             email: String::new(),
@@ -117,7 +118,7 @@ impl eframe::App for TemplateApp {
                 index += 1;
 
                 ui.horizontal(|ui| {
-                    ui.label(format!("{}", index));
+                    ui.label(format!("{}", index - 1));
                     if ui.button(format!("{}", item.1.title)).clicked() {
                         self.mode = AppModes::Edit(EditModes::Prev(item.1.to_owned()));
                     }
@@ -170,6 +171,7 @@ impl eframe::App for TemplateApp {
                                     self.slots.insert(
                                         format!("{}", self.slots.len()),
                                         Slot {
+                                            id: Some(self.slots.len()),
                                             title: slot.title.clone(),
                                             username: slot.username.clone(),
                                             email: slot.username.clone(),
@@ -182,16 +184,17 @@ impl eframe::App for TemplateApp {
                                         return;
                                     };
 
-                                    self.slots.insert(
-                                        format!("{}", self.slots.len()),
-                                        Slot {
-                                            title: slot.title.clone(),
-                                            username: slot.username.clone(),
-                                            email: slot.username.clone(),
-                                            password: slot.password.clone(),
-                                            description: slot.description.clone(),
-                                        },
-                                    );
+                                    let map_slot = self
+                                        .slots
+                                        .get_mut(&format!("{}", slot.id.unwrap()))
+                                        .expect("slot was found to have an invalid id");
+
+                                    map_slot.id = slot.id;
+                                    map_slot.title = slot.title.clone();
+                                    map_slot.username = slot.username.clone();
+                                    map_slot.email = slot.email.clone();
+                                    map_slot.password = slot.password.clone();
+                                    map_slot.description = slot.description.clone();
                                 } else {
                                     panic!("invalid mode");
                                 }
